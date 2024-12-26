@@ -89,9 +89,9 @@ if (-not $Pods) {
 }
 
 if ($Context -eq "aws") {
-    $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature_name=$Deployment -o jsonpath="{.items[*].metadata.name}"
+    $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
 } else {
-    $Pods = kubectl get pods -n $Namespace --context=$Context -l feature_name=$Deployment -o jsonpath="{.items[*].metadata.name}"
+    $Pods = kubectl get pods -n $Namespace --context=$Context -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
 }
 
 
