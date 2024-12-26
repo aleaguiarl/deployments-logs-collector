@@ -88,6 +88,13 @@ if (-not $Pods) {
     exit 1
 }
 
+if ($Context -eq "aws") {
+    $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature_name=$Deployment -o jsonpath="{.items[*].metadata.name}"
+} else {
+    $Pods = kubectl get pods -n $Namespace --context=$Context -l feature_name=$Deployment -o jsonpath="{.items[*].metadata.name}"
+}
+
+
 
 if (-not $Case) {
     $LogDir = ".\logs_${Deployment}_${Today}"
