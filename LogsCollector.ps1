@@ -75,6 +75,8 @@ $AwsContext = "arn:aws:eks:sa-east-1:381492245517:cluster/prd-sgiot"
 $Today = Get-Date -Format "yyyy-MM-dd"
 $TodayTime = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 
+$NamespaceUpper = $Namespace.ToUpper()
+
 if ($Context -eq "aws") {
     $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l app=$Deployment -o jsonpath="{.items[*].metadata.name}"
 } else {
@@ -86,12 +88,12 @@ if (-not $Pods) {
     exit 1
 }
 
+
 if (-not $Case) {
     $LogDir = ".\logs_${Deployment}_${Today}"
 } elseif ($Context -eq "aws"){
     $LogDir = ".\[SGIOT AWS]${Case}\logs_${Deployment}_${Today}"
 } else {
-    $NamespaceUpper = $Namespace.ToUpper()
     $LogDir = ".\[${NamespaceUpper}]${Case}\logs_${Deployment}_${Today}"
 }
 
