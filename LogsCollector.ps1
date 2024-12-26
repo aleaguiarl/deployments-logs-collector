@@ -84,9 +84,18 @@ if ($Context -eq "aws") {
 }
 
 if (-not $Pods) {
+    if ($Context -eq "aws") {
+        $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
+    } else {
+        $Pods = kubectl get pods -n $Namespace --context=$Context -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
+    }
+}
+
+if (-not $Pods) {
     Write-Host "No pods found for deployment '$Deployment' in namespace '$Namespace'."
     exit 1
 }
+
 
 if ($Context -eq "aws") {
     $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
