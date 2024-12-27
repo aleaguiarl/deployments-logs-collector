@@ -70,6 +70,11 @@ Write-Host "
 +=============================================================+
 "
 
+trap {
+    Write-Host "Command interrupted by the user." -ForegroundColor Yellow
+    continue
+}
+
 $AwsContext = "arn:aws:eks:sa-east-1:381492245517:cluster/prd-sgiot"
 
 $Today = Get-Date -Format "yyyy-MM-dd"
@@ -83,7 +88,8 @@ if ($Context -eq "aws") {
     $Pods = kubectl get pods -n $Namespace --context=$Context -l app=$Deployment -o jsonpath="{.items[*].metadata.name}"
 }
 
-if (-not $Pods) {
+#Caso não sejam encontrados pods utilizando a label "app" como parâmetro de busca, realiza a busca utilizando o parâmetro "feature-name"
+if (-not $Pods){
     if ($Context -eq "aws") {
         $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
     } else {
@@ -96,17 +102,8 @@ if (-not $Pods) {
     exit 1
 }
 
-
-if ($Context -eq "aws") {
-    $Pods = kubectl get pods -n $Namespace --context=$AwsContext -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
-} else {
-    $Pods = kubectl get pods -n $Namespace --context=$Context -l feature-name=$Deployment -o jsonpath="{.items[*].metadata.name}"
-}
-
-
-
 if (-not $Case) {
-    $LogDir = ".\logs_${Deployment}_${Today}"
+    $LogDir = ".\[${NamespaceUpper}]logs_${Deployment}_${Today}"
 } elseif ($Context -eq "aws"){
     $LogDir = ".\[SGIOT AWS]${Case}\logs_${Deployment}_${Today}"
 } else {
@@ -125,10 +122,15 @@ foreach ($Pod in $Pods.Split(" ")) {
     $LogFile = "$LogDir\$Pod-$TodayTime.log"
     Write-Host "------------------------------------------------------------" -ForegroundColor Blue
     Write-Host "[$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")]Collecting logs for pod '$Pod'..."
-    if ($Context -eq "aws") {
-        kubectl logs $Pod -n $Namespace --since=$Since > "$LogDir\[SGIOT AWS]$Pod-$TodayTime.log"
-    } else {
-        kubectl logs $Pod -n $Namespace --context=$Context --since=$Since > "$LogDir\[${NamespaceUpper}]$Pod-$TodayTime.log"
+    try {
+        if ($Context -eq "aws") {
+            kubectl logs $Pod -n $Namespace --since=$Since > "$LogDir\[SGIOT AWS]$Pod-$TodayTime.log"
+        } else {
+            kubectl logs $Pod -n $Namespace --context=$Context --since=$Since > "$LogDir\[${NamespaceUpper}]$Pod-$TodayTime.log"
+        }
+    } catch {
+        Write-Host "Failed to collect logs for pod $Pod or. Skipping to the next..."
+        continue
     }
     
     Write-Host "Logs saved to $LogFile"
